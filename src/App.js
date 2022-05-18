@@ -4,7 +4,7 @@ import _ from 'lodash';
 function App() {
   const [data, setData] = useState({ accounts: [] });
   useEffect(() => {
-    let counter = 0;
+    let index = 0;
     let allData = [];
     const fetchData = async (pager) => {
       const query = `
@@ -40,12 +40,12 @@ function App() {
         });
         setData({ accounts: allData });
       } else {
-        counter = counter + 1;
-        fetchData(counter * 1000);
+        index = accounts[999].id;
+        fetchData(index);
       }
     };
 
-    fetchData(counter);
+    fetchData(index);
   }, []);
 
   return (
@@ -78,19 +78,19 @@ function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {data.accounts.map((person) => (
-                    <tr key={person.id}>
+                  {data.accounts.map((o) => (
+                    <tr key={o.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        {person.id}
+                        <a href={'https://etherscan.io/address/' + o.id} target="_blank">
+                          {o.id}
+                        </a>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {Math.floor(person.health * 100)}%
+                        {Math.floor(o.health * 100)}%
                       </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{o.totalBorrowValueInEth}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {person.totalBorrowValueInEth}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {person.totalCollateralValueInEth}
+                        {o.totalCollateralValueInEth}
                       </td>
                     </tr>
                   ))}
