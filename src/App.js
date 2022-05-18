@@ -1,23 +1,105 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import _ from 'lodash';
 
 function App() {
+  const [data, setData] = useState({ accounts: [] });
+  useEffect(() => {
+    let counter = 0;
+    let allData = [];
+    const fetchData = async (pager) => {
+      const query = `
+      {
+        accounts(first: 1000, where: {hasBorrowed: true, id_gt: "${pager}"}) {
+          id
+          health
+          totalBorrowValueInEth
+          totalCollateralValueInEth
+        }
+      }
+      `;
+      const data = await fetch('https://api.thegraph.com/subgraphs/name/graphprotocol/compound-v2', {
+        body: JSON.stringify({
+          query,
+        }),
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+      let result = await data.json();
+      let accounts = result.data.accounts;
+      allData = allData.concat(accounts);
+
+      console.log(accounts.length);
+      if (accounts.length < 1000) {
+        allData = _.filter(allData, function (o) {
+          return o.totalBorrowValueInEth != '0' && parseFloat(o.health) < 0.5;
+        });
+        allData = _.sortBy(allData, function (o) {
+          return o.health;
+        });
+        setData({ accounts: allData });
+      } else {
+        counter = counter + 1;
+        fetchData(counter * 1000);
+      }
+    };
+
+    fetchData(counter);
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="px-4 sm:px-6 lg:px-8">
+      <div className="sm:flex sm:items-center">
+        <div className="sm:flex-auto">
+          <h1 className="text-xl font-semibold text-gray-900">用戶列表</h1>
+          <p className="mt-2 text-sm text-gray-700">需要被清算的用戶</p>
+        </div>
+      </div>
+      <div className="mt-8 flex flex-col">
+        <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-300">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                      Address
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Health
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      totalBorrowValueInEth
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      totalCollateralValueInEth
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {data.accounts.map((person) => (
+                    <tr key={person.id}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                        {person.id}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {Math.floor(person.health * 100)}%
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {person.totalBorrowValueInEth}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {person.totalCollateralValueInEth}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
